@@ -1,7 +1,1 @@
 .idea/*
-input/*
-!input/.gitkeep
-input_alt/*
-!input_alt/.gitkeep
-output/*
-!output/.gitkeep
