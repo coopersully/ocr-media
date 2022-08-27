@@ -1,9 +1,9 @@
+import io
 import os
 import sys
 
-import pytesseract
 import PyPDF2
-import io
+import pytesseract
 
 poppler_path = r'C:\Program Files\poppler-22.04.0-hea5ffa9_2\Library\bin'
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -12,7 +12,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 if __name__ == '__main__':
 
     input_folder = "input"
-    output_file = "output/searchable"
+    output_folder = "output"
 
     mode = str(input("Type 'A' to enter Advanced Mode, and press any other key for Simple Mode."))
     if mode.lower() == 'a':
@@ -22,12 +22,12 @@ if __name__ == '__main__':
         input_folder = str(input("Specify a folder name in the current directory or file path.\n"))
 
         print()
-        print("What file should we output to?")
-        print("DEFAULT: \"" + output_file + "\"")
-        output_file = str(input("Specify a file name in the current directory; DO NOT include the extension.\n"))
+        print("What folder should we output to?")
+        print("DEFAULT: \"" + output_folder + "\"")
+        output_file = str(input("Specify a directory.\n"))
 
     print()
-    print("Scanning all files in " + input_folder + "...")
+    print("Converting all files in " + input_folder + "...")
 
     '''
     Get all available files in the given directory
@@ -50,25 +50,41 @@ if __name__ == '__main__':
     Use PyTesseract to OCR (Optical Character Recognition)
     every file, and add it to the PDF Writer object.
     '''
-    pdf_writer = PyPDF2.PdfFileWriter()
     failed_files = 0
+    i = 0
     for file in all_files:
+
+        fixed_file_name = file[file.find("\\") + 1:file.find(".")]
+
+        i += 1
+        pdf_writer = PyPDF2.PdfFileWriter()
         try:
             page = pytesseract.image_to_pdf_or_hocr(file, extension='pdf')
             pdf = PyPDF2.PdfFileReader(io.BytesIO(page))
             pdf_writer.addPage(pdf.getPage(0))
         except Exception as e:
+
+            '''
+            If this is the first failed file, print a newline
+            char for better formatting in the terminal window.
+            '''
+            if failed_files == 0:
+                print()
+
             print("Skipping " + file + "; " + str(e))
             failed_files += 1
 
-    '''
-    Open the PDF file for  writing, truncating the file first
-    and in binary mode. Write all recognized pages from the above
-    region into a single PDF file.
-    '''
-    with open(output_file + ".pdf", "wb") as page_to_write:
-        pdf_writer.write(page_to_write)
+        '''
+        Open the PDF file for writing, truncating the file first and opening
+        it in binary mode. Write the recognized page above to a new document.
+        '''
+        output_file = output_folder + "/" + fixed_file_name + ".pdf"
+        with open(output_file, "wb") as page_to_write:
+            pdf_writer.write(page_to_write)
 
-    num_pages = pdf_writer.pages.__len__()
-    print("Scan complete! ")
-    print(f"Successfully converted { num_files - failed_files } input file(s) into a single PDF with { num_pages } pages.")
+    num_files = all_files.__len__()
+    num_converted = num_files - failed_files
+
+    print()
+    print("Conversion complete!")
+    print(f"Successfully converted { num_converted }/{ num_files } input file(s) into (a) searchable pdf document(s).")
